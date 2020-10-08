@@ -5,9 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
-*.prototxt
-*.caffemodel
-*.model
+
 *.png
 *.jpg
 *.h5
