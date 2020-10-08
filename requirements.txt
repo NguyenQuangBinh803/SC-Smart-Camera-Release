@@ -1,0 +1,7 @@
+PyQt5
+tensorflow==1.15.0
+scikit-image
+requests
+opencv-python
+protobuf==3.6.0
+scikit-learn==0.22.2
