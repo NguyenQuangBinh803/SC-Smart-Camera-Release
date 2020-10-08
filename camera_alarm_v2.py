@@ -8,7 +8,7 @@ import cv2
 import imutils
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
-from face_recognize import face_feature_v2
+import face_feature_v2
 
 api_alarm = "http://192.168.1.184/control"
 

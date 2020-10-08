@@ -5,6 +5,13 @@ __pycache__/
 
 # C extensions
 *.so
+*.prototxt
+*.caffemodel
+*.model
+*.png
+*.jpg
+*.h5
+*.params
 
 # Distribution / packaging
 .Python
