@@ -1,4 +1,15 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+__author__ = 'Edward J. C. Ashenbert'
+__credits__ = ["Edward J. C. Ashenbert"]
+__maintainer__ = "Edward J. C. Ashenbert"
+
+import sys
 import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pickle
 import queue
 import sys
