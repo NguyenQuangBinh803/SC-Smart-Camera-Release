@@ -1,12 +1,21 @@
-# import the necessary packages
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+__author__ = 'Edward J. C. Ashenbert'
+__credits__ = ["Edward J. C. Ashenbert"]
+__maintainer__ = "Edward J. C. Ashenbert"
+
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import math
-from datetime import datetime
-
-
-
 import cv2
 import imutils
 import numpy as np
+
+from datetime import datetime
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
