@@ -14,8 +14,8 @@ import math
 import cv2
 import imutils
 import numpy as np
+import time
 
-from datetime import datetime
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
@@ -30,38 +30,31 @@ def pyramid(image, scale=1.5, minSize=(30, 30)):
             break
         yield image
 
-
 def sliding_window(image, stepSize, windowSize):
     for y in range(0, image.shape[0], stepSize):
         for x in range(0, image.shape[1], stepSize):
             yield (x, y, image[y:y + windowSize[1], x:x + windowSize[0]])
 
-
 (winW, winH) = (20, 20)
 
-
 def detect_and_predict_mask(frame, faceNet, maskNet):
-    # grab the dimensions of the frame and then construct a blob
-    # from it
 
     (h, w) = frame.shape[:2]
+    start = time.time()
     blob = cv2.dnn.blobFromImage(frame, 1.0, (224, 224), (104.0, 177.0, 123.0))
-
-    # pass the blob through the network and obtain the face detections
+    print(1, time.time() - start)
+    start = time.time()
     faceNet.setInput(blob)
+    print(time.time() - start)
+    start = time.time()
     detections = faceNet.forward()
-    # print(detections.shape)
-
-    # initialize our list of faces, their corresponding locations,
-    # and the list of predictions from our face mask network
+    print(time.time() - start)
     faces = []
     locs = []
     preds = []
 
-    # loop over the detections
     for i in range(0, detections.shape[2]):
-        # extract the confidence (i.e., probability) associated with
-        # the detection
+
         confidence = detections[0, 0, i, 2]
 
         # filter out weak detections by ensuring the confidence is
@@ -102,15 +95,13 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
     # return a 2-tuple of the face locations and their corresponding
     # locations
     return (locs, preds)
-
-
+print(1)
 # load our serialized face detector model from disk
-prototxtPath = r"face_detector\deploy.prototxt"
-weightsPath = r"face_detector\res10_300x300_ssd_iter_140000.caffemodel"
+prototxtPath = "face_detector/deploy.prototxt"
+weightsPath = "face_detector/res10_300x300_ssd_iter_140000.caffemodel"
 
 faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 maskNet = load_model("mask_detector.model")
-
 
 def calculate_average_temp(image):
     count = 0
@@ -135,13 +126,13 @@ def detect_faces(frame, thermal):
     (locs, _) = detect_and_predict_mask(frame, faceNet, maskNet)
     for box in locs:
         bbox = box
-
+        temperature = 36.5
         # boxes.append([int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])])
         cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 255, 0), 2)
         # cv2.rectangle(frame, (int((bbox[0] + bbox[2]) / 2 - size / 2), int(bbox[3] + offset)),
         #               (int((bbox[0] + bbox[2]) / 2 + size / 2), int(bbox[3] + size + offset)), (0, 0, 255), 1)
 
-        temperature = calculate_average_temp(thermal[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])])
+        # temperature = calculate_average_temp(thermal[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])])
 
         # print("Face area: ", (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
 
@@ -157,7 +148,6 @@ def detect_faces(frame, thermal):
         #
         # temperature = round((math.log10(temp) * 16), 1)
         # print("Mean pixel value:", temp, temperature)
-        return temperature
-        # cv2.putText(frame, str(temperature), (int(bbox[0]), int(bbox[1]) - 3), cv2.FONT_HERSHEY_SIMPLEX, 1,
-        #             (0, 255, 0), 2, cv2.LINE_AA)
+        cv2.putText(frame, str(temperature), (int(bbox[0]), int(bbox[1]) - 3), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (0, 255, 0), 2, cv2.LINE_AA)
 

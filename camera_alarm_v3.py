@@ -50,16 +50,14 @@ def grab_face_in(cam1, cam2, queue):
         frame = frame[101: 381, 173: 560]
         thermal = cv2.resize(thermal, (387, 289))
 
-        temperature = face_feature_v2.detect_faces(frame, thermal)
-        if q2.qsize() < 10:
-            q2.put(temperature)
+        face_feature_v2.detect_faces(frame, thermal)
 
         frame_face["frame"] = frame
         frame_face["thermal"] = thermal
-
-        if queue.qsize() < 3:
+        cv2.imwrite("thermal.jpeg", thermal)
+        if queue.qsize() < 2:
             queue.put(frame_face)
-        if queue.qsize() > 2:
+        if queue.qsize() > 1:
             print("show face in overload: ", queue.qsize())
 
 
