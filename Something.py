@@ -5,7 +5,7 @@ import cv2
 from PyQt5.QtCore import QThread, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QWidget, QApplication
-import face_feature_v3
+# import face_feature_v3
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 
@@ -35,7 +35,7 @@ class Thread(QThread):
 
 
 from PyQt5 import uic
-
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
 form_class = uic.loadUiType("camera_alarm_v4.ui")[0]
 
 
@@ -48,13 +48,18 @@ class App(QWidget, form_class):
 
     @pyqtSlot(QImage)
     def setImage(self, image):
-        self.label.setPixmap(QPixmap.fromImage(image))
-
+        self.label.setPixmap(self.no_ticker)
+    #
     def initUI(self):
+
+        self.yes_ticker = QtGui.QPixmap("NO.png")
+        self.no_ticker = QtGui.QPixmap("YES.png")
         self.setWindowTitle(self.title)
-        th = Thread(self)
-        th.changePixmap.connect(self.setImage)
-        th.start()
+        # th = Thread(self)
+        self.label.setPixmap(self.yes_ticker)
+
+        # th.changePixmap.connect(self.setImage)
+        # th.start()
         self.show()
 
 

@@ -35,6 +35,7 @@ class OwnImageWidget(QtWidgets.QWidget):
         qp.end()
 
 thresh = 49
+
 class Window(QtWidgets.QMainWindow, form_class):
     def __init__(self):
         super().__init__()
@@ -52,11 +53,15 @@ class Window(QtWidgets.QMainWindow, form_class):
     def InitUI(self):
         # set title text
         self.setWindowTitle(self.title)
-
+        self.yes_ticker = QtGui.QPixmap("Not1.png")
+        self.no_ticker = QtGui.QPixmap("YES.png")
         # Turn in group box
         self.camera = OwnImageWidget(self.camera)
         self.thermal = OwnImageWidget(self.thermal)
 
+        self.ticker = self.ticker_label
+
+        self.label.setPixmap(self.no_ticker)
         self.temp.setText(str(thresh))
         self.alarm_button.clicked.connect(self.change_thesh)
 
@@ -79,6 +84,8 @@ class Window(QtWidgets.QMainWindow, form_class):
         self.camera.setImage(image_in)
         self.thermal.setImage(thermal_in)
 
+
+
         # if not q1.empty():
         #     camera = q1.get()
         #     frame_face = camera["frame"]
@@ -100,6 +107,7 @@ class Window(QtWidgets.QMainWindow, form_class):
         #         self.updateTable(data_temp)
 
     def updateTable(self, data):
+        self.ticker.setImage()
         rowposition = self.tableWidget.rowCount()
         self.tableWidget.insertRow(rowposition)
         for column_number, column_data in enumerate(data):

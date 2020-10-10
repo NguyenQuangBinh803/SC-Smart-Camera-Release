@@ -5,8 +5,8 @@ __author__ = 'Edward J. C. Ashenbert'
 __credits__ = ["Edward J. C. Ashenbert"]
 __maintainer__ = "Edward J. C. Ashenbert"
 
-import sys
 import os
+import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -105,8 +105,8 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
 
 
 # load our serialized face detector model from disk
-prototxtPath = r"face_detector\deploy.prototxt"
-weightsPath = r"face_detector\res10_300x300_ssd_iter_140000.caffemodel"
+prototxtPath = "face_detector/deploy.prototxt"
+weightsPath = "face_detector/res10_300x300_ssd_iter_140000.caffemodel"
 
 faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 maskNet = load_model("mask_detector.model")
@@ -115,6 +115,7 @@ maskNet = load_model("mask_detector.model")
 def calculate_average_temp(image):
     count = 0
     sum = 0
+
     # loop over the sliding window for each layer of the pyramid
     for (x, y, window) in sliding_window(image, stepSize=5, windowSize=(winW, winH)):
         if window.shape[0] != winH or window.shape[1] != winW:
@@ -127,37 +128,24 @@ def calculate_average_temp(image):
             # print(math.log10(temp) * 16)
         clone = image.copy()
         cv2.rectangle(clone, (x, y), (x + winW, y + winH), (0, 255, 0), 2)
-
-    return sum / count
+    if count > 0:
+        return round(sum / count, 1)
+    else:
+        return 36.5
 
 
 def detect_faces(frame, thermal):
     (locs, _) = detect_and_predict_mask(frame, faceNet, maskNet)
+    temperature = 36.5
+    ret = False
     for box in locs:
         bbox = box
-
-        # boxes.append([int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])])
-        cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 255, 0), 2)
-        # cv2.rectangle(frame, (int((bbox[0] + bbox[2]) / 2 - size / 2), int(bbox[3] + offset)),
-        #               (int((bbox[0] + bbox[2]) / 2 + size / 2), int(bbox[3] + size + offset)), (0, 0, 255), 1)
-
+        face = frame[int(bbox[1]):int(bbox[3]), int(bbox[0]): int(bbox[2])]
+        cv2.imwrite("faces/" + str(datetime.now().strftime("%Y%m%d")) + ".jpg", face)
         temperature = calculate_average_temp(thermal[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])])
+        print("Face area: ", (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
 
-        # print("Face area: ", (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
+        if (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]) > 4500:
+            ret = True
 
-        # TEST_RESULT = "logging/" + datetime.now().strftime("%Y%m%d_%H%M%S%f")
-        # cv2.imwrite(TEST_RESULT + ".png", (thermal[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])]))
-        #
-        # area = thermal[int(bbox[3] + offset):int(bbox[3] + size + offset),
-        #        int(((bbox[0] + bbox[2]) / 2) - size):int(((bbox[0] + bbox[2]) / 2) + size)]
-        #
-        # TEST_RESULT = "ROI/" + datetime.now().strftime("%Y%m%d_%H%M%S%f")
-        # cv2.imwrite(TEST_RESULT + ".png", area)
-        # temp = np.mean(area)
-        #
-        # temperature = round((math.log10(temp) * 16), 1)
-        # print("Mean pixel value:", temp, temperature)
-        return temperature
-        # cv2.putText(frame, str(temperature), (int(bbox[0]), int(bbox[1]) - 3), cv2.FONT_HERSHEY_SIMPLEX, 1,
-        #             (0, 255, 0), 2, cv2.LINE_AA)
-
+    return ret, temperature

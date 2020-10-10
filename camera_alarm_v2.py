@@ -10,6 +10,7 @@ import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from datetime import datetime
 import queue
 import sys
 import threading
@@ -28,12 +29,16 @@ q1 = queue.Queue()
 q2 = queue.Queue()
 face_capture_thread = None
 
+face_detect_return = False
+
 if not os.path.exists("faces"):
     os.makedirs("faces")
 
 def grab_face_in(cam1, cam2, queue):
+    global face_detect_return
     capture1 = cv2.VideoCapture(cam1)
     capture2 = cv2.VideoCapture(cam2)
+
     
     while (not capture1.isOpened() or not capture2.isOpened()):
         print("Try to reconnect camera face in ...")
@@ -50,8 +55,8 @@ def grab_face_in(cam1, cam2, queue):
         frame = frame[101: 381, 173: 560]
         thermal = cv2.resize(thermal, (387, 289))
 
-        temperature = face_feature_v2.detect_faces(frame, thermal)
-        if q2.qsize() < 10:
+        face_detect_return, temperature = face_feature_v2.detect_faces(frame, thermal)
+        if q2.qsize() < 10 and face_detect_return:
             q2.put(temperature)
 
         frame_face["frame"] = frame
@@ -100,9 +105,13 @@ class Window(QtWidgets.QMainWindow, form_class):
         # set title text
         self.setWindowTitle(self.title)
 
+        self.yes_ticker = QtGui.QPixmap("NO.png")
+        self.no_ticker = QtGui.QPixmap("YES.png")
+
         # Turn in group box
         self.camera = OwnImageWidget(self.camera)
         self.thermal = OwnImageWidget(self.thermal)
+        self.ticker = self.ticker_label
 
         self.temp.setText(str(thresh))
         self.alarm_button.clicked.connect(self.change_thesh)
@@ -112,7 +121,7 @@ class Window(QtWidgets.QMainWindow, form_class):
         self.timer.start(0)
 
     def face_update_frame(self):
-        global running
+        global running, face_detect_return
         if not q1.empty():
             camera = q1.get()
             frame_face = camera["frame"]
@@ -128,36 +137,32 @@ class Window(QtWidgets.QMainWindow, form_class):
             thermal_in = QtGui.QImage(thermal.data, 591, 441, bpl, QtGui.QImage.Format_RGB888)
             self.camera.setImage(image_in)
             self.thermal.setImage(thermal_in)
+            if face_detect_return:
+                self.ticker.setPixmap(self.yes_ticker)
+            else:
+                self.ticker.setPixmap(self.no_ticker)
 
             if not q2.empty():
-                data_temp = q2.get()
+                data_temp = [q2.get()]
                 self.updateTable(data_temp)
 
     def updateTable(self, data):
-        rowposition = self.tableWidget.rowCount()
+        self.ticker.setPixmap(self.yes_ticker)
+        rowposition = 0
         self.tableWidget.insertRow(rowposition)
-        for column_number, column_data in enumerate(data):
-            item = str(column_data)
-            if column_number == 0:
-                path = "faces/" + item + ".jpg"
-                if os.path.exists(path):
-                    pic = QtGui.QPixmap(path)
-                    self.label = QtWidgets.QLabel(self.centralwidget)
-                    self.label.setScaledContents(True)
-                    self.label.setPixmap(pic)
-                    self.tableWidget.setCellWidget(rowposition, column_number, self.label)
-                else:
-                    self.tableWidget.setItem(rowposition, column_number, QtWidgets.QTableWidgetItem("Missing"))
-            else:
-                self.tableWidget.setItem(rowposition, column_number, QtWidgets.QTableWidgetItem(item))
+        path = "faces/" + datetime.now().strftime("%Y%m%d") + ".jpg"
+        if os.path.exists(path):
+            pic = QtGui.QPixmap(path)
+            self.label = QtWidgets.QLabel(self.centralwidget)
+            self.label.setScaledContents(True)
+            self.label.setPixmap(pic)
+            self.tableWidget.setCellWidget(rowposition, 0, self.label)
+            self.tableWidget.setItem(rowposition, 1, QtWidgets.QTableWidgetItem(str(data[-1])))
+
         self.tableWidget.verticalHeader().setDefaultSectionSize(200)
         self.tableWidget.horizontalHeader().setStretchLastSection(True)
         self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
 
-        if data[1] > thresh:
-            data_control = '{"PASSWORD": "PYROJECTCOLTD","CMD": "STOP"}'
-        else:
-            data_control = '{"PASSWORD": "PYROJECTCOLTD","CMD": "ALLOW"}'
         # kq = requests.post(api_alarm, data=data_control).json()
         # print(kq)
 

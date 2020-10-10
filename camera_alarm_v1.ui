@@ -17,9 +17,9 @@
    <widget class="QTableWidget" name="tableWidget">
     <property name="geometry">
      <rect>
-      <x>1300</x>
+      <x>1040</x>
       <y>10</y>
-      <width>341</width>
+      <width>601</width>
       <height>991</height>
      </rect>
     </property>
@@ -60,8 +60,8 @@
      <rect>
       <x>50</x>
       <y>10</y>
-      <width>691</width>
-      <height>471</height>
+      <width>591</width>
+      <height>441</height>
      </rect>
     </property>
    </widget>
@@ -70,8 +70,8 @@
      <rect>
       <x>50</x>
       <y>490</y>
-      <width>691</width>
-      <height>471</height>
+      <width>591</width>
+      <height>441</height>
      </rect>
     </property>
    </widget>
@@ -96,6 +96,19 @@
       <width>91</width>
       <height>31</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="ticker_label">
+    <property name="geometry">
+     <rect>
+      <x>650</x>
+      <y>10</y>
+      <width>380</width>
+      <height>380</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
     </property>
    </widget>
   </widget>
