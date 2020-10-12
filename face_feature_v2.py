@@ -9,7 +9,8 @@ import os
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+from tensorflow import keras
+import tensorflow as tf
 import math
 import cv2
 import imutils
@@ -20,6 +21,7 @@ from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 
+import SmartCamera_ShareMemory as sc_share_memory
 
 def pyramid(image, scale=1.5, minSize=(30, 30)):
     yield image
@@ -90,17 +92,18 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
             faces.append(face)
             locs.append((startX, startY, endX, endY))
 
-
+    # ValueError: Tensor Tensor("dense_1/Softmax:0", shape=(?, 2), dtype=float32) is not an element of this graph.
+    # This error cause by threading not safe with keras
     # only make a predictions if at least one face was detected
-    # if len(faces) > 0:
-    #     # for faster inference we'll make batch predictions on *all*
-    #     # faces at the same time rather than one-by-one predictions
-    #     # in the above `for` loop
-    #     faces = np.array(faces, dtype="float32")
-    #     preds = maskNet.predict(faces, batch_size=32)
-
-    # return a 2-tuple of the face locations and their corresponding
-    # locations
+    if len(faces) > 0:
+        try:
+            with session.as_default():
+                with session.graph.as_default():
+                    faces = np.array(faces, dtype="float32")
+                    preds = maskNet.predict(faces, batch_size=32)
+                    print(preds)
+        except Exception as exp:
+            print(exp)
     return (locs, preds)
 
 
@@ -108,9 +111,18 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
 prototxtPath = "face_detector/deploy.prototxt"
 weightsPath = "face_detector/res10_300x300_ssd_iter_140000.caffemodel"
 
-faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
-maskNet = load_model("mask_detector.model")
+faceNet = cv2.dnn.readNetFromCaffe(prototxtPath, weightsPath)
+config = tf.ConfigProto(
+    device_count={'GPU': 1},
+    intra_op_parallelism_threads=1,
+    allow_soft_placement=True
+)
+session = tf.Session(config=config)
 
+keras.backend.set_session(session)
+
+maskNet = load_model("mask_detector.model")
+maskNet._make_predict_function()
 
 def calculate_average_temp(image):
     count = 0
@@ -133,7 +145,6 @@ def calculate_average_temp(image):
     else:
         return 36.5
 
-
 def detect_faces(frame, thermal):
     (locs, _) = detect_and_predict_mask(frame, faceNet, maskNet)
     temperature = 36.5
@@ -142,10 +153,9 @@ def detect_faces(frame, thermal):
         bbox = box
         face = frame[int(bbox[1]):int(bbox[3]), int(bbox[0]): int(bbox[2])]
         cv2.imwrite("faces/" + str(datetime.now().strftime("%Y%m%d")) + ".jpg", face)
-        temperature = calculate_average_temp(thermal[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])])
-        print("Face area: ", (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
-
         if (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]) > 4500:
             ret = True
+            temperature = calculate_average_temp(thermal[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])])
+            sc_share_memory.thermal_data = temperature
 
     return ret, temperature

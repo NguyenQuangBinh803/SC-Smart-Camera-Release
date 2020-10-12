@@ -5,8 +5,8 @@ __author__ = 'Edward J. C. Ashenbert'
 __credits__ = ["Edward J. C. Ashenbert"]
 __maintainer__ = "Edward J. C. Ashenbert"
 
-import sys
 import os
+import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -17,7 +17,6 @@ import threading
 
 import cv2
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-
 import face_feature_v2
 
 api_alarm = "http://192.168.1.184/control"
@@ -48,12 +47,14 @@ def grab_face_in(cam1, cam2, queue):
     while (running):
         frame_face = {}
         bboxes_track = []
-        
+
         retval2, thermal = capture2.read()
         retval1, frame = capture1.read()
 
         frame = frame[101: 381, 173: 560]
         thermal = cv2.resize(thermal, (387, 289))
+
+        #threading.Thread(target=face_feature_v2.detect_faces, args=[frame, thermal, ]).start()
 
         face_detect_return, temperature = face_feature_v2.detect_faces(frame, thermal)
         if q2.qsize() < 10 and face_detect_return:

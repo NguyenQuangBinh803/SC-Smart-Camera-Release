@@ -5,8 +5,8 @@ __author__ = 'Edward J. C. Ashenbert'
 __credits__ = ["Edward J. C. Ashenbert"]
 __maintainer__ = "Edward J. C. Ashenbert"
 
-import sys
 import os
+import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -14,12 +14,12 @@ import math
 import cv2
 import imutils
 import numpy as np
-import time
 
+from datetime import datetime
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
-
+import SmartCamera_ShareMemory as sc_share_memory
 
 def pyramid(image, scale=1.5, minSize=(30, 30)):
     yield image
@@ -30,31 +30,38 @@ def pyramid(image, scale=1.5, minSize=(30, 30)):
             break
         yield image
 
+
 def sliding_window(image, stepSize, windowSize):
     for y in range(0, image.shape[0], stepSize):
         for x in range(0, image.shape[1], stepSize):
             yield (x, y, image[y:y + windowSize[1], x:x + windowSize[0]])
 
+
 (winW, winH) = (20, 20)
 
+
 def detect_and_predict_mask(frame, faceNet, maskNet):
+    # grab the dimensions of the frame and then construct a blob
+    # from it
 
     (h, w) = frame.shape[:2]
-    start = time.time()
     blob = cv2.dnn.blobFromImage(frame, 1.0, (224, 224), (104.0, 177.0, 123.0))
-    print(1, time.time() - start)
-    start = time.time()
+
+    # pass the blob through the network and obtain the face detections
     faceNet.setInput(blob)
-    print(time.time() - start)
-    start = time.time()
     detections = faceNet.forward()
-    print(time.time() - start)
+    # print(detections.shape)
+
+    # initialize our list of faces, their corresponding locations,
+    # and the list of predictions from our face mask network
     faces = []
     locs = []
     preds = []
 
+    # loop over the detections
     for i in range(0, detections.shape[2]):
-
+        # extract the confidence (i.e., probability) associated with
+        # the detection
         confidence = detections[0, 0, i, 2]
 
         # filter out weak detections by ensuring the confidence is
@@ -83,29 +90,29 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
             faces.append(face)
             locs.append((startX, startY, endX, endY))
 
-
+    # ValueError: Tensor Tensor("dense_1/Softmax:0", shape=(?, 2), dtype=float32) is not an element of this graph.
+    # This error cause by threading not safe with keras
     # only make a predictions if at least one face was detected
-    # if len(faces) > 0:
-    #     # for faster inference we'll make batch predictions on *all*
-    #     # faces at the same time rather than one-by-one predictions
-    #     # in the above `for` loop
-    #     faces = np.array(faces, dtype="float32")
-    #     preds = maskNet.predict(faces, batch_size=32)
+    if len(faces) > 0:
 
-    # return a 2-tuple of the face locations and their corresponding
-    # locations
+        faces = np.array(faces, dtype="float32")
+        preds = maskNet.predict(faces, batch_size=32)
+        print(preds)
     return (locs, preds)
-print(1)
+
+
 # load our serialized face detector model from disk
 prototxtPath = "face_detector/deploy.prototxt"
 weightsPath = "face_detector/res10_300x300_ssd_iter_140000.caffemodel"
 
-faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
+faceNet = cv2.dnn.readNetFromCaffe(prototxtPath, weightsPath)
 maskNet = load_model("mask_detector.model")
+
 
 def calculate_average_temp(image):
     count = 0
     sum = 0
+
     # loop over the sliding window for each layer of the pyramid
     for (x, y, window) in sliding_window(image, stepSize=5, windowSize=(winW, winH)):
         if window.shape[0] != winH or window.shape[1] != winW:
@@ -118,36 +125,23 @@ def calculate_average_temp(image):
             # print(math.log10(temp) * 16)
         clone = image.copy()
         cv2.rectangle(clone, (x, y), (x + winW, y + winH), (0, 255, 0), 2)
-
-    return sum / count
-
+    if count > 0:
+        return round(sum / count, 1)
+    else:
+        return 36.5
 
 def detect_faces(frame, thermal):
     (locs, _) = detect_and_predict_mask(frame, faceNet, maskNet)
+    temperature = 36.5
+    ret = False
     for box in locs:
         bbox = box
-        temperature = 36.5
-        # boxes.append([int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])])
-        cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 255, 0), 2)
-        # cv2.rectangle(frame, (int((bbox[0] + bbox[2]) / 2 - size / 2), int(bbox[3] + offset)),
-        #               (int((bbox[0] + bbox[2]) / 2 + size / 2), int(bbox[3] + size + offset)), (0, 0, 255), 1)
+        face = frame[int(bbox[1]):int(bbox[3]), int(bbox[0]): int(bbox[2])]
+        cv2.imwrite("faces/" + str(datetime.now().strftime("%Y%m%d")) + ".jpg", face)
+        if (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]) > 4500:
+            ret = True
+            # temperature = calculate_average_temp(thermal[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])])
+            # print("Face area: ", (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
+            sc_share_memory.thermal_data = temperature
 
-        # temperature = calculate_average_temp(thermal[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])])
-
-        # print("Face area: ", (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
-
-        # TEST_RESULT = "logging/" + datetime.now().strftime("%Y%m%d_%H%M%S%f")
-        # cv2.imwrite(TEST_RESULT + ".png", (thermal[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])]))
-        #
-        # area = thermal[int(bbox[3] + offset):int(bbox[3] + size + offset),
-        #        int(((bbox[0] + bbox[2]) / 2) - size):int(((bbox[0] + bbox[2]) / 2) + size)]
-        #
-        # TEST_RESULT = "ROI/" + datetime.now().strftime("%Y%m%d_%H%M%S%f")
-        # cv2.imwrite(TEST_RESULT + ".png", area)
-        # temp = np.mean(area)
-        #
-        # temperature = round((math.log10(temp) * 16), 1)
-        # print("Mean pixel value:", temp, temperature)
-        cv2.putText(frame, str(temperature), (int(bbox[0]), int(bbox[1]) - 3), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                    (0, 255, 0), 2, cv2.LINE_AA)
-
+    return ret, temperature
