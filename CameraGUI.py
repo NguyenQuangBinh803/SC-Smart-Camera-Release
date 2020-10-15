@@ -53,91 +53,116 @@ class Window(QtWidgets.QMainWindow, form_class):
     def InitUI(self):
         # set title text
         self.setWindowTitle(self.title)
-        self.yes_ticker = QtGui.QPixmap("Not1.png")
-        self.no_ticker = QtGui.QPixmap("YES.png")
+        self.yes_ticker = QtGui.QPixmap("icon/NO-removebg-preview.png")
+        self.no_ticker = QtGui.QPixmap("icon/YES-removebg-preview.png")
+        self.no_mask = QtGui.QPixmap("icon/NOMASK-removebg-preview.png")
+        self.mask = QtGui.QPixmap("icon/MASK-removebg-preview.png")
+        self.fever = QtGui.QPixmap("icon/fever-removebg-preview.png")
+        self.normal = QtGui.QPixmap("icon/normal-removebg-preview.png")
+        self.position = QtGui.QPixmap("icon/position-removebg-preview.png")
+
         # Turn in group box
         self.camera = OwnImageWidget(self.camera)
-        self.thermal = OwnImageWidget(self.thermal)
+        # self.thermal = OwnImageWidget(self.thermal)
 
         self.ticker = self.ticker_label
+        self.ticker.setPixmap(self.no_ticker)
 
-        self.label.setPixmap(self.no_ticker)
-        self.temp.setText(str(thresh))
-        self.alarm_button.clicked.connect(self.change_thesh)
+        self.ticker_2 = self.ticker_label_2
+        self.ticker_2.setPixmap(self.no_ticker)
 
-        self.timer = QtCore.QTimer(self)
-        self.timer.timeout.connect(self.face_update_frame)
-        self.timer.start(0)
+        self.ticker_3 = self.ticker_label_3
+        self.ticker_3.setPixmap(self.no_ticker)
 
-    def face_update_frame(self):
+        self.label = self.label
+        self.label.setPixmap(self.fever)
 
-        global running
+        self.label_2 = self.label_2
+        self.label_2.setPixmap(self.normal)
 
-        frame_face = np.zeros((500,500,3), np.uint8)
-        thermal = np.zeros((500,500,3), np.uint8)
+        self.label_3 = self.label_3
+        self.label_3.setPixmap(self.position)
 
-        bpl = frame_face.shape[2] * frame_face.shape[1]
-
-        image_in = QtGui.QImage(frame_face.data, 591, 441, bpl, QtGui.QImage.Format_RGB888)
-        thermal_in = QtGui.QImage(thermal.data, 591, 441, bpl, QtGui.QImage.Format_RGB888)
-
-        self.camera.setImage(image_in)
-        self.thermal.setImage(thermal_in)
+        # self.label = self.label()
+        # self.label.setPixmap(self.no_mask)
 
 
+        # self.temp.setText(str(thresh))
+        # self.alarm_button.clicked.connect(self.change_thesh)
 
-        # if not q1.empty():
-        #     camera = q1.get()
-        #     frame_face = camera["frame"]
-        #     thermal = camera["thermal"]
-        #     frame_face = cv2.resize(frame_face, (591, 441))
-        #     frame_face = cv2.cvtColor(frame_face, cv2.COLOR_BGR2RGB)
-        #
-        #     thermal = cv2.resize(thermal, (591, 441))
-        #     thermal = cv2.cvtColor(thermal, cv2.COLOR_BGR2RGB)
-        #     bpl = frame_face.shape[2] * frame_face.shape[1]
-        #
-        #     image_in = QtGui.QImage(frame_face.data, 591, 441, bpl, QtGui.QImage.Format_RGB888)
-        #     thermal_in = QtGui.QImage(thermal.data, 591, 441, bpl, QtGui.QImage.Format_RGB888)
-        #     self.camera.setImage(image_in)
-        #     self.thermal.setImage(thermal_in)
-        #
-        #     if not q2.empty():
-        #         data_temp = q2.get()
-        #         self.updateTable(data_temp)
-
-    def updateTable(self, data):
-        self.ticker.setImage()
-        rowposition = self.tableWidget.rowCount()
-        self.tableWidget.insertRow(rowposition)
-        for column_number, column_data in enumerate(data):
-            item = str(column_data)
-            if column_number == 0:
-                path = "faces/" + item + ".jpg"
-                if os.path.exists(path):
-                    pic = QtGui.QPixmap(path)
-                    self.label = QtWidgets.QLabel(self.centralwidget)
-                    self.label.setScaledContents(True)
-                    self.label.setPixmap(pic)
-                    self.tableWidget.setCellWidget(rowposition, column_number, self.label)
-                else:
-                    self.tableWidget.setItem(rowposition, column_number, QtWidgets.QTableWidgetItem("Missing"))
-            else:
-                self.tableWidget.setItem(rowposition, column_number, QtWidgets.QTableWidgetItem(item))
-        self.tableWidget.verticalHeader().setDefaultSectionSize(200)
-        self.tableWidget.horizontalHeader().setStretchLastSection(True)
-        self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-
-        if data[1] > thresh:
-            data_control = '{"PASSWORD": "PYROJECTCOLTD","CMD": "STOP"}'
-        else:
-            data_control = '{"PASSWORD": "PYROJECTCOLTD","CMD": "ALLOW"}'
-        # kq = requests.post(api_alarm, data=data_control).json()
-        # print(kq)
-
-    def change_thesh(self):
-        global thresh
-        thresh = int(self.temp.text())
+    #     self.timer = QtCore.QTimer(self)
+    #     self.timer.timeout.connect(self.face_update_frame)
+    #     self.timer.start(0)
+    #
+    # def face_update_frame(self):
+    #
+    #     global running
+    #
+    #     frame_face = np.zeros((500,500,3), np.uint8)
+    #     thermal = np.zeros((500,500,3), np.uint8)
+    #
+    #     bpl = frame_face.shape[2] * frame_face.shape[1]
+    #
+    #     image_in = QtGui.QImage(frame_face.data, 591, 441, bpl, QtGui.QImage.Format_RGB888)
+    #     thermal_in = QtGui.QImage(thermal.data, 591, 441, bpl, QtGui.QImage.Format_RGB888)
+    #
+    #     self.camera.setImage(image_in)
+    #     self.thermal.setImage(thermal_in)
+    #
+    #
+    #
+    #     # if not q1.empty():
+    #     #     camera = q1.get()
+    #     #     frame_face = camera["frame"]
+    #     #     thermal = camera["thermal"]
+    #     #     frame_face = cv2.resize(frame_face, (591, 441))
+    #     #     frame_face = cv2.cvtColor(frame_face, cv2.COLOR_BGR2RGB)
+    #     #
+    #     #     thermal = cv2.resize(thermal, (591, 441))
+    #     #     thermal = cv2.cvtColor(thermal, cv2.COLOR_BGR2RGB)
+    #     #     bpl = frame_face.shape[2] * frame_face.shape[1]
+    #     #
+    #     #     image_in = QtGui.QImage(frame_face.data, 591, 441, bpl, QtGui.QImage.Format_RGB888)
+    #     #     thermal_in = QtGui.QImage(thermal.data, 591, 441, bpl, QtGui.QImage.Format_RGB888)
+    #     #     self.camera.setImage(image_in)
+    #     #     self.thermal.setImage(thermal_in)
+    #     #
+    #     #     if not q2.empty():
+    #     #         data_temp = q2.get()
+    #     #         self.updateTable(data_temp)
+    #
+    # def updateTable(self, data):
+    #     self.ticker.setImage()
+    #     rowposition = self.tableWidget.rowCount()
+    #     self.tableWidget.insertRow(rowposition)
+    #     for column_number, column_data in enumerate(data):
+    #         item = str(column_data)
+    #         if column_number == 0:
+    #             path = "faces/" + item + ".jpg"
+    #             if os.path.exists(path):
+    #                 pic = QtGui.QPixmap(path)
+    #                 self.label = QtWidgets.QLabel(self.centralwidget)
+    #                 self.label.setScaledContents(True)
+    #                 self.label.setPixmap(pic)
+    #                 self.tableWidget.setCellWidget(rowposition, column_number, self.label)
+    #             else:
+    #                 self.tableWidget.setItem(rowposition, column_number, QtWidgets.QTableWidgetItem("Missing"))
+    #         else:
+    #             self.tableWidget.setItem(rowposition, column_number, QtWidgets.QTableWidgetItem(item))
+    #     self.tableWidget.verticalHeader().setDefaultSectionSize(200)
+    #     self.tableWidget.horizontalHeader().setStretchLastSection(True)
+    #     self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+    #
+    #     if data[1] > thresh:
+    #         data_control = '{"PASSWORD": "PYROJECTCOLTD","CMD": "STOP"}'
+    #     else:
+    #         data_control = '{"PASSWORD": "PYROJECTCOLTD","CMD": "ALLOW"}'
+    #     # kq = requests.post(api_alarm, data=data_control).json()
+    #     # print(kq)
+    #
+    # def change_thesh(self):
+    #     global thresh
+    #     thresh = int(self.temp.text())
 
     def closeEvent(self, event):
         global running

@@ -17,7 +17,7 @@ import threading
 
 import cv2
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-import face_feature_v2
+import face_feature_v4
 
 api_alarm = "http://192.168.1.184/control"
 
@@ -54,9 +54,9 @@ def grab_face_in(cam1, cam2, queue):
         frame = frame[101: 381, 173: 560]
         thermal = cv2.resize(thermal, (387, 289))
 
-        threading.Thread(target=face_feature_v2.detect_faces, args=[frame, thermal, ]).start()
+        threading.Thread(target=face_feature_v4.detect_faces, args=[frame, thermal, ]).start()
 
-        face_detect_return, temperature = face_feature_v2.detect_faces(frame, thermal)
+        face_detect_return, temperature = face_feature_v4.detect_faces(frame, thermal)
         if q2.qsize() < 10 and face_detect_return:
             q2.put(temperature)
 

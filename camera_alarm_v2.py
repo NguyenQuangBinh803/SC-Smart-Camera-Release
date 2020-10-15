@@ -14,10 +14,10 @@ from datetime import datetime
 import queue
 import sys
 import threading
-
+import numpy as np
 import cv2
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-import face_feature_v2
+import face_feature_v4
 
 api_alarm = "http://192.168.1.184/control"
 
@@ -46,6 +46,7 @@ def grab_face_in(cam1, cam2, queue):
         
     while (running):
         frame_face = {}
+        human_data = {}
         bboxes_track = []
 
         retval2, thermal = capture2.read()
@@ -56,9 +57,12 @@ def grab_face_in(cam1, cam2, queue):
 
         #threading.Thread(target=face_feature_v2.detect_faces, args=[frame, thermal, ]).start()
 
-        face_detect_return, temperature = face_feature_v2.detect_faces(frame, thermal)
+        face_detect_return, mask, temperature = face_feature_v4.detect_faces(frame, thermal)
+        
         if q2.qsize() < 10 and face_detect_return:
-            q2.put(temperature)
+            human_data["temperature"] = temperature
+            human_data["mask"] = mask
+            q2.put(human_data)
 
         frame_face["frame"] = frame
         frame_face["thermal"] = thermal
@@ -111,8 +115,9 @@ class Window(QtWidgets.QMainWindow, form_class):
 
         # Turn in group box
         self.camera = OwnImageWidget(self.camera)
-        self.thermal = OwnImageWidget(self.thermal)
+        #self.thermal = OwnImageWidget(self.thermal)
         self.ticker = self.ticker_label
+        self.annoucement = self.label
 
         self.temp.setText(str(thresh))
         self.alarm_button.clicked.connect(self.change_thesh)
@@ -137,15 +142,24 @@ class Window(QtWidgets.QMainWindow, form_class):
             image_in = QtGui.QImage(frame_face.data, 591, 441, bpl, QtGui.QImage.Format_RGB888)
             thermal_in = QtGui.QImage(thermal.data, 591, 441, bpl, QtGui.QImage.Format_RGB888)
             self.camera.setImage(image_in)
-            self.thermal.setImage(thermal_in)
+            #self.thermal.setImage(thermal_in)
             if face_detect_return:
                 self.ticker.setPixmap(self.yes_ticker)
             else:
                 self.ticker.setPixmap(self.no_ticker)
 
             if not q2.empty():
-                data_temp = [q2.get()]
-                self.updateTable(data_temp)
+                data_temp = q2.get()
+                temperature_data = [data_temp["temperature"]]
+                mask_data = data_temp["mask"]
+                if mask_data:
+                    
+                    self.annoucement.setText("With Mask")
+                    self.annoucement.setStyleSheet('color: green')
+                else:
+                    self.annoucement.setText("No Mask")
+                    self.annoucement.setStyleSheet('color: red')
+                self.updateTable(temperature_data)
 
     def updateTable(self, data):
         self.ticker.setPixmap(self.yes_ticker)
