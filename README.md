@@ -1,1 +1,0 @@
-# SC-Smart-Camera-Release
