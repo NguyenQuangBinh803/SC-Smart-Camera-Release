@@ -17,13 +17,14 @@ import glob
 from smart_camera_common_imports import *
 from SmartCameraModel.face_detect_and_recognize import FaceDetectAndRecognition
 
-class FaceEncoding:
-    def __init__(self):
 
+class FaceRecognizerTraining:
+
+    def __init__(self):
         self.embedder = cv2.dnn.readNetFromTorch("openface_nn4.small2.v1.t7")
 
     def encoding_with_torch_openface(self, dataset_directory):
-        folders = glob.glob(os.path.abspath("")  + dataset_directory + "/*/")
+        folders = glob.glob(os.path.abspath("") + dataset_directory + "/*/")
         knownNames = []
         knownEmbeddings = []
 
@@ -115,9 +116,8 @@ class FaceEncoding:
         name = le.classes_[j]
 
 
-
 if __name__ == "__main__":
-    face_encode = FaceEncoding()
+    face_encode = FaceRecognizerTraining()
     # face_recognize = FaceDetectAndRecognition()
     face_encode.encoding_with_torch_openface("\\dataset\\")
     face_encode.training_svm_model_openface()

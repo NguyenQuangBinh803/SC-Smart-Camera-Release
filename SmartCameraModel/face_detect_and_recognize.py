@@ -51,8 +51,10 @@ class FaceDetectAndRecognition():
 
         print("Done init models")
 
+
     def diagnostic_logging(self, message):
         print(message)
+
 
     def detect_face(self, frame, rgb_require=True):
 
@@ -105,6 +107,7 @@ class FaceDetectAndRecognition():
         else:
             return locs, normal_faces
 
+
     def detect_mask(self, faces_image):
         is_mask = False
         try:
@@ -129,6 +132,7 @@ class FaceDetectAndRecognition():
             print(exp)
 
         return is_mask
+
 
     def face_detect_and_mask(self, frame):
         (h, w) = frame.shape[:2]
