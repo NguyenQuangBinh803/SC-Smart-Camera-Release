@@ -43,7 +43,7 @@ class SmartCameraController:
             sc_share_memory.frame_face["thermal"] = thermal
             time.sleep(0.02)
 
-    def threading_calculate_temperature(self):
+    def threading_temperature_estimate(self):
         while (self.running):
             
 
@@ -56,7 +56,7 @@ class SmartCameraController:
                 self.thermal_analysis.calculate_thermal(thermal)
             time.sleep(0.05)
 
-    def threading_detect_face(self):
+    def threading_face_detect(self):
         while (self.running):
             print("Start detecting face ... ")
             if sc_share_memory.frame_face["frame"] is not None and sc_share_memory.frame_face["thermal"] is not None:

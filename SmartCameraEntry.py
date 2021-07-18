@@ -19,8 +19,8 @@ if __name__ == "__main__":
 
     threading.Thread(target=smart_camera_controller.threading_streaming, args=[-1, 2, ]).start()
     threading.Thread(target=smart_camera_controller.threading_face_recognize).start()
-    threading.Thread(target=smart_camera_controller.threading_detect_face).start()
-    threading.Thread(target=smart_camera_controller.threading_calculate_temperature).start()
+    threading.Thread(target=smart_camera_controller.threading_face_detect).start()
+    threading.Thread(target=smart_camera_controller.threading_temperature_estimate).start()
 
     main_window = Window()
     sys.exit(app.exec_())
