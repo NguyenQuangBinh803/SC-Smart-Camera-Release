@@ -73,7 +73,7 @@ class SmartCameraController:
                 #     print(names)
             time.sleep(0.05)
 
-    def threading_detect_mask(self):
+    def threading_face_recognize(self):
         while (self.running):
             
             if sc_share_memory.global_face_image is not None:
@@ -85,7 +85,7 @@ class SmartCameraController:
 if __name__ == "__main__":
     smart_camera_controller = SmartCameraController()
     threading.Thread(target=smart_camera_controller.threading_streaming, args=[-1, 2, ]).start()
-    threading.Thread(target=smart_camera_controller.threading_detect_mask).start()
+    threading.Thread(target=smart_camera_controller.threading_face_recognize).start()
     threading.Thread(target=smart_camera_controller.threading_detect_face).start()
     while True:
 

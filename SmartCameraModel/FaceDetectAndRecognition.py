@@ -4,7 +4,7 @@ __maintainer__ = "Edward J. C. Ashenbert"
 __email__ = "nguyenquangbinh803@gmail.com"
 __copyright__ = "Copyright 2020"
 __status__ = "Working on embedding recognition to smart camera"
-__version__ = "1.0.1"
+__version__ = "1.4 - Fix a lot of unbelievably terrible design - 20210718"
 
 import os
 import sys
@@ -83,8 +83,10 @@ class FaceDetectAndRecognition:
                     face_image = cv2.resize(face_image, (224, 224))
                     face_image_rgb.append(face_image)
                     face_image = img_to_array(face_image)
-                    face_image = preprocess_input(face_image)
-                    face_detect_list.append(face_image)
+                    face_image_processed = preprocess_input(face_image)
+                    
+
+                    face_detect_list.append(face_image_processed)
                     sc_share_memory.global_face_image = face_detect_list
                     sc_share_memory.face_area = (endX - startX) * (endY - startY)
                     if (endX - startX) * (endY - startY) > 3000:
@@ -108,11 +110,80 @@ class FaceDetectAndRecognition:
         if rgb_require:
             return face_detect_location_list, face_image_rgb
         else:
-            return face_detect_location_list, face_image_normal
+            return face_detect_location_list, face_image_processed
+
+
+    def executing_mask_detect(self, input_face_image):
+        try:
+            with self.session.as_default():
+                with self.session.graph.as_default():
+                    face_detect_list = np.array(input_face_image, dtype="float32")
+                    self.face_mask_detector.set_tensor(self.input_information[0]['index'], face_detect_list)
+                    self.face_mask_detector.invoke()
+                    mask_detect_list = self.face_mask_detector.get_tensor(self.output_information[0]['index'])
+                    self.diagnostic_logging(mask_detect_list)
+                        
+                    if len(mask_detect_list[0]) > 1 and mask_detect_list[0][1] > 0.5:
+                        sc_share_memory.mask_detect_status = False
+                        return False
+                    elif len(mask_detect_list[0]) > 1 and mask_detect_list[0][0] > 0.5:
+                        sc_share_memory.mask_detect_status = True
+                        return True
+                    
+        except Exception as exp:
+            self.diagnostic_logging(exp)
+
+
+    def executing_face_and_mask_detect(self, input_image):
+        # Should bind data to the share memory here
+        output_face_image = self.executing_face_detect(input_image, rgb_require=False)[1]
+        output_mask_result = self.executing_mask_detect(output_face_image)
 
 
     def executing_face_detect_and_mask(self, input_image):
-        
+        input_image_height, input_image_width = input_image.shape[:2]
+        input_image_blob = cv2.dnn.blobFromImage(input_image, 1.0, (224, 224), (104.0, 177.0, 123.0))
+        self.face_detector.setInput(input_image_blob)
+        face_detect_results = self.face_detector.forward()
+
+        face_detect_list = []
+        face_detect_location_list = []
+        mask_detect_list = []
+
+        for i in range(0, face_detect_results.shape[2]):
+            detect_confidence = face_detect_results[0, 0, i, 2]
+            if detect_confidence > 0.5:
+                sc_share_memory.human_appear_status = True
+                box = face_detect_results[0, 0, i, 3:7] * np.array([input_image_width, input_image_height, input_image_width, input_image_height])
+                (startX, startY, endX, endY) = box.astype("int")
+                (startX, startY) = (max(0, startX), max(0, startY))
+                (endX, endY) = (min(input_image_width - 1, endX), min(input_image_height - 1, endY))
+
+                face_image = input_image[startY:endY, startX:endX]
+                sc_share_memory.global_face_image = face_image
+                cv2.imwrite( + str(datetime.now().strftime("%Y%m%d")) + ".jpg", face_image)
+                face_image = cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)
+                face_image = cv2.resize(face_image, (224, 224))
+                face_image = img_to_array(face_image)
+                face_image = preprocess_input(face_image)
+
+                face_detect_list.append(face_image)
+                
+                sc_share_memory.face_area = (endX - startX) * (endY - startY)
+
+                if (endX - startX) * (endY - startY) > 3000:
+                    sc_share_memory.face_detect_status = True
+                else:
+                    sc_share_memory.face_detect_status = False
+
+                face_detect_location_list.append((startX, startY, endX, endY))
+
+        if not face_detect_location_list:
+            sc_share_memory.face_detect_status = False
+            sc_share_memory.human_appear_status = False
+
+        if sc_share_memory.face_detect_status:
+            sc_share_memory.global_locs = face_detect_location_list
 
         if len(face_detect_list) > 0:
             try:
@@ -150,6 +221,7 @@ class FaceDetectAndRecognition:
             return name
         else:
             return "Unknown"
+
 
     def training_encode_face_image(self, dataset_directory):
         folders = glob.glob(os.path.abspath("") + dataset_directory + "/*/")
